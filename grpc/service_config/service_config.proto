@@ -314,6 +314,33 @@ message LrsLoadBalancingPolicyConfig {
   repeated LoadBalancingConfig child_policy = 5;
 }
 
+// Configuration for FaultInjection LB policy.
+message FaultInjectionConfig {
+  // Optional.  What LB policy to use for routing between the backend
+  // addresses.  If unset, defaults to round_robin.
+  repeated LoadBalancingConfig child_policy = 1;
+  message FaultPolicy {
+    google.protobuf.Duration delay = 1;
+    message Percentage {
+      uint32 numerator;
+      uint32 denominator;
+    }
+    Percentage delay_percentage = 2;
+    uint32 abortStatus = 3;
+    Percentage aborty_percentage = 4;    
+  }
+  FaultPolicy fault_policy = 2;
+}
+
+message RlsLoadBalancingConfig {
+  // JSON representation of RLS config e.g. grpc.lookup.v1.rls_config.proto 
+  string route_lookup_config = 1;
+  // target field name to use when using child_policy. 
+  // e.g. GrpclbConfig.service_name
+  string child_policy_config_target_field_name = 2;
+  repeated LoadBalancingConfig child_policy = 3;
+}
+
 // Selects LB policy and provides corresponding configuration.
 //
 // In general, all instances of this field should be repeated. Clients will
@@ -356,11 +383,17 @@ message LoadBalancingConfig {
     WeightedTargetLoadBalancingPolicyConfig weighted_target = 10;
 
     // EXPERIMENTAL -- DO NOT USE
+    // The policy is known as rls_experimental while it is under development.
+    // It will be renamed to rls once it is ready for public use.
+    RlsConfig rls_experimental = 12 [json_name = "rls_experimental"];
+
+    // EXPERIMENTAL -- DO NOT USE
     // xDS-based load balancing.
     // The policy is known as xds_experimental while it is under development.
     // It will be renamed to xds once it is ready for public use.
     CdsConfig cds = 6;
     EdsLoadBalancingPolicyConfig eds = 7;
+    FaultInjectionConfig fault_injection = 11 [json_name = "fault_injection"];
     LrsLoadBalancingPolicyConfig lrs = 8;
     XdsConfig xds = 2 [deprecated = true];
     // TODO(rekarthik): Deprecate this field after the xds policy
@@ -368,7 +401,7 @@ message LoadBalancingConfig {
     XdsConfig xds_experimental = 5 [json_name = "xds_experimental",
                                     deprecated = true];
 
-    // Next available ID: 11
+    // Next available ID: 13
   }
 }
 
